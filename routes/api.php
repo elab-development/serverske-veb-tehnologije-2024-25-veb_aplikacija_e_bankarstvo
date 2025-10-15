@@ -9,6 +9,10 @@ use App\Http\Controllers\TransferController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
 
+Route::get('/ping', function () {
+    return response()->json(['ok' => true]);
+});
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
