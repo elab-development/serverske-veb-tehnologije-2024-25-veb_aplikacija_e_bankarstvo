@@ -48,6 +48,10 @@ class User extends Authenticatable
         ];
     }
 
+    public const ROLE_CUSTOMER = 'customer';
+    public const ROLE_OPERATOR = 'operator';
+    public const ROLE_ADMIN    = 'admin';
+
     public function accounts(): HasMany
     {
         return $this->hasMany(Account::class);
