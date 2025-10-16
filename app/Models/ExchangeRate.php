@@ -9,7 +9,7 @@ class ExchangeRate extends Model
 {
     use HasFactory;
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = ['base','quote','rate_date','rate'];
 
