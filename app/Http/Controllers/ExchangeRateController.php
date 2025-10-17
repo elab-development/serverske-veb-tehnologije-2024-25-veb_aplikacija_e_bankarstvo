@@ -49,6 +49,52 @@ class ExchangeRateController extends Controller
             $rate = $json['rates'][$quote] ?? null;
 
             if (!$rate) {
+                // Probaj obrnuti par i invertuj (EUR/RSD -> 1 / rate)
+                $resp2 = Http::acceptJson()->get("https://api.exchangerate.host/{$date}", [
+                    'base'    => $quote, 
+                    'symbols' => $base,
+                ]);
+
+                if ($resp2->ok()) {
+                    $json2 = $resp2->json();
+                    $rev = $json2['rates'][$base] ?? null;
+                    if ($rev && (float)$rev > 0) {
+                        $rate = round(1 / (float)$rev, 8);
+                    }
+                }
+
+                // 3) Fallback: probaj /latest umesto specifičnog datuma
+                if (!$rate) {
+                    $resp3 = Http::acceptJson()->get("https://api.exchangerate.host/latest", [
+                        'base'    => $base,
+                        'symbols' => $quote,
+                    ]);
+                    if ($resp3->ok()) {
+                        $json3 = $resp3->json();
+                        $rate = $json3['rates'][$quote] ?? null;
+                    }
+                }
+                // 4) Fallback: krstarenje preko EUR (cross-rate) — uzmi oba kursa sa base EUR pa izračunaj
+                if (!$rate) {
+                    $resp4 = Http::acceptJson()->get("https://api.exchangerate.host/{$date}", [
+                        'base'    => 'EUR',
+                        'symbols' => "{$base},{$quote}",
+                    ]);
+                    if ($resp4->ok()) {
+                        $json4 = $resp4->json();
+                        $rBase  = $json4['rates'][$base]  ?? null; // EUR->BASE
+                        $rQuote = $json4['rates'][$quote] ?? null; // EUR->QUOTE
+                        if ($rBase && $rQuote && (float)$rBase > 0) {
+                            // base->quote = (EUR->quote) / (EUR->base)
+                            $rate = round(((float)$rQuote) / ((float)$rBase), 8);
+                        }
+                    }
+                }
+
+            }
+
+
+            if (!$rate) {
                 return response()->json([
                     'message' => "Nije pronađen kurs za $base/$quote na $date (exchangerate.host)"
                 ], 422);
